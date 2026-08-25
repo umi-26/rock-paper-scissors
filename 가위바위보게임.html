@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가위바위보 게임</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        }
+        @keyframes bounce-short {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-bounce-short {
+            animation: bounce-short 0.6s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 shadow-2xl rounded-3xl p-6 md:p-8 flex flex-col items-center">
+        
+        <!-- Header -->
+        <h1 class="text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 mb-2">
+            가위 바위 보
+        </h1>
+        <p class="text-slate-400 text-sm mb-6">컴퓨터와 승부를 겨뤄보세요!</p>
+
+        <!-- Score Board -->
+        <div class="grid grid-cols-3 gap-3 w-full mb-8 bg-slate-800/60 p-4 rounded-2xl border border-slate-700/40 text-center">
+            <div class="flex flex-col">
+                <span class="text-xs text-indigo-300 font-semibold uppercase tracking-wider">플레이어</span>
+                <span id="playerScore" class="text-2xl font-black text-indigo-400">0</span>
+            </div>
+            <div class="flex flex-col border-x border-slate-700/60">
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">무승부</span>
+                <span id="drawScore" class="text-2xl font-black text-slate-300">0</span>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-xs text-pink-300 font-semibold uppercase tracking-wider">컴퓨터</span>
+                <span id="computerScore" class="text-2xl font-black text-pink-400">0</span>
+            </div>
+        </div>
+
+        <!-- Battle Arena -->
+        <div class="w-full flex items-center justify-between mb-8 px-4">
+            <!-- Player Choice Display -->
+            <div class="flex flex-col items-center">
+                <div id="playerDisplay" class="w-20 h-20 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-4xl shadow-inner transition-all duration-300">
+                    ❓
+                </div>
+                <span class="text-xs text-slate-400 mt-2 font-medium">나</span>
+            </div>
+
+            <!-- VS Badge -->
+            <div class="text-xl font-black italic text-slate-500 tracking-wider">VS</div>
+
+            <!-- Computer Choice Display -->
+            <div class="flex flex-col items-center">
+                <div id="computerDisplay" class="w-20 h-20 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-4xl shadow-inner transition-all duration-300">
+                    ❓
+                </div>
+                <span class="text-xs text-slate-400 mt-2 font-medium">컴퓨터</span>
+            </div>
+        </div>
+
+        <!-- Result Text Area (글씨 크기 확대 및 강조) -->
+        <div id="resultText" class="h-16 flex items-center justify-center text-2xl md:text-3xl font-black tracking-wide text-indigo-200 mb-6 transition-all text-center">
+            버튼을 눌러 게임을 시작하세요!
+        </div>
+
+        <!-- Choice Buttons -->
+        <div class="grid grid-cols-3 gap-3 w-full mb-6">
+            <button onclick="play('scissors')" class="group relative flex flex-col items-center justify-center p-4 bg-gradient-to-b from-slate-800 to-slate-900 hover:from-indigo-600 hover:to-indigo-700 border border-slate-700 hover:border-indigo-500 rounded-2xl shadow-lg active:scale-95 transition-all duration-200 cursor-pointer">
+                <span class="text-3xl mb-1 group-hover:scale-110 transition-transform">✌️</span>
+                <span class="text-xs font-semibold text-slate-300">가위</span>
+            </button>
+            <button onclick="play('rock')" class="group relative flex flex-col items-center justify-center p-4 bg-gradient-to-b from-slate-800 to-slate-900 hover:from-indigo-600 hover:to-indigo-700 border border-slate-700 hover:border-indigo-500 rounded-2xl shadow-lg active:scale-95 transition-all duration-200 cursor-pointer">
+                <span class="text-3xl mb-1 group-hover:scale-110 transition-transform">✊</span>
+                <span class="text-xs font-semibold text-slate-300">바위</span>
+            </button>
+            <button onclick="play('paper')" class="group relative flex flex-col items-center justify-center p-4 bg-gradient-to-b from-slate-800 to-slate-900 hover:from-indigo-600 hover:to-indigo-700 border border-slate-700 hover:border-indigo-500 rounded-2xl shadow-lg active:scale-95 transition-all duration-200 cursor-pointer">
+                <span class="text-3xl mb-1 group-hover:scale-110 transition-transform">🖐️</span>
+                <span class="text-xs font-semibold text-slate-300">보</span>
+            </button>
+        </div>
+
+        <!-- Reset Button -->
+        <button onclick="resetGame()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold rounded-xl border border-slate-700 transition-colors cursor-pointer">
+            점수 초기화
+        </button>
+
+    </div>
+
+    <script>
+        // Game state variables
+        let scores = {
+            player: 0,
+            draw: 0,
+            computer: 0
+        };
+
+        const choices = {
+            'scissors': { name: '가위', emoji: '✌️' },
+            'rock': { name: '바위', emoji: '✊' },
+            'paper': { name: '보', emoji: '🖐️' }
+        };
+
+        const keys = Object.keys(choices);
+
+        function play(playerChoice) {
+            const playerDisplay = document.getElementById('playerDisplay');
+            const computerDisplay = document.getElementById('computerDisplay');
+            const resultText = document.getElementById('resultText');
+
+            // Add shake/bounce animation state
+            playerDisplay.classList.add('animate-bounce-short');
+            computerDisplay.classList.add('animate-bounce-short');
+            playerDisplay.textContent = '✊';
+            computerDisplay.textContent = '✊';
+            resultText.textContent = '결과를 계산중입니다...';
+            resultText.className = 'h-12 flex items-center justify-center text-lg font-bold tracking-wide text-slate-400 mb-6';
+
+            setTimeout(() => {
+                // Remove animation
+                playerDisplay.classList.remove('animate-bounce-short');
+                computerDisplay.classList.remove('animate-bounce-short');
+
+                // Computer random choice
+                const computerChoice = keys[Math.floor(Math.random() * keys.length)];
+
+                // Update UI symbols
+                playerDisplay.textContent = choices[playerChoice].emoji;
+                computerDisplay.textContent = choices[computerChoice].emoji;
+
+                // Determine winner
+                if (playerChoice === computerChoice) {
+                    scores.draw++;
+                    resultText.textContent = '무승부입니다!';
+                    resultText.className = 'h-16 flex items-center justify-center text-2xl md:text-3xl font-black tracking-wide text-slate-300 mb-6 text-center';
+                } else if (
+                    (playerChoice === 'scissors' && computerChoice === 'paper') ||
+                    (playerChoice === 'rock' && computerChoice === 'scissors') ||
+                    (playerChoice === 'paper' && computerChoice === 'rock')
+                ) {
+                    scores.player++;
+                    resultText.textContent = '🎉 플레이어의 승리!';
+                    resultText.className = 'h-16 flex items-center justify-center text-2xl md:text-3xl font-black tracking-wide text-indigo-400 mb-6 text-center animate-bounce-short';
+                } else {
+                    scores.computer++;
+                    resultText.textContent = '💻 컴퓨터의 승리!';
+                    resultText.className = 'h-16 flex items-center justify-center text-2xl md:text-3xl font-black tracking-wide text-pink-400 mb-6 text-center';
+                }
+
+                updateScores();
+            }, 400);
+        }
+
+        function updateScores() {
+            document.getElementById('playerScore').textContent = scores.player;
+            document.getElementById('drawScore').textContent = scores.draw;
+            document.getElementById('computerScore').textContent = scores.computer;
+        }
+
+        function resetGame() {
+            scores = { player: 0, draw: 0, computer: 0 };
+            updateScores();
+            document.getElementById('playerDisplay').textContent = '❓';
+            document.getElementById('computerDisplay').textContent = '❓';
+            const resultText = document.getElementById('resultText');
+            resultText.textContent = '버튼을 눌러 게임을 시작하세요!';
+            resultText.className = 'h-16 flex items-center justify-center text-2xl md:text-3xl font-black tracking-wide text-indigo-200 mb-6 text-center';
+        }
+    </script>
+</body>
+</html>
